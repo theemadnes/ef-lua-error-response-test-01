@@ -36,3 +36,15 @@ curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/
 # test 502
 curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/?echo_code=502 -v | jq
 ```
+
+### attempt to add a custom error response
+
+```
+kubectl apply -f custom-error-message-lua-filter/starting.yaml
+
+# test 404
+curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/?echo_code=404 -v
+
+# test 503
+curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/?echo_code=503 -v
+```
