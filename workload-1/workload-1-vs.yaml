@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: workload-1
+spec:
+  gateways:
+  - ingress-gateway/asm-ingressgateway
+  hosts:
+  - workload-1.example.com
+  http:
+  - match:
+    - uri:
+        prefix: /workload-1
+    rewrite:
+      uri: "/"
+    route:
+    - destination:
+        host: echoserver
+        port:
+          number: 80
