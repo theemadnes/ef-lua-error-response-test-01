@@ -28,5 +28,11 @@ kubectl apply -n workload-1 -f workload-1/
 INGRESS_GATEWAY_IP=$(kubectl get service asm-ingressgateway -n ingress-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
 # call the first workload 
-curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1 | jq
+curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/ | jq
+
+# test 404
+curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/?echo_code=404 -v | jq
+
+# test 502
+curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/?echo_code=502 -v | jq
 ```
