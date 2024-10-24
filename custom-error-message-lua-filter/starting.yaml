@@ -19,13 +19,18 @@ spec:
               subFilter:
                 name: envoy.filters.http.router
       patch:
-        operation: INSERT_BEFORE
+        operation: INSERT_BEFORE #INSERT_FIRST #INSERT_BEFORE 
         value:
           name: envoy.filters.http.lua
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
             inlineCode: |
               function envoy_on_response(response_handle)
+                --response_handle:logInfo("Status: "..response_handle:headers():get(":status"))
+                --response_handle:logErr("Status: "..response_handle:headers())
+                for k,v in pairs(response_handle:headers()) do
+                  print(k.." = "..v)
+                end
                 local status_code = response_handle:headers():get(":status")
                 if status_code == nil then
                   response_handle:logInfo("No status code in response")

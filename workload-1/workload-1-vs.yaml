@@ -18,3 +18,11 @@ spec:
         host: echoserver
         port:
           number: 80
+  #- match:
+  #  - uri:
+  #      prefix: /
+  #  route:
+  #  - destination:
+  #      host: echoserver
+  #      port:
+  #        number: 80
