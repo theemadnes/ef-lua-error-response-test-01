@@ -26,8 +26,9 @@ spec:
             "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
             inlineCode: |
               function envoy_on_response(response_handle)
-                --response_handle:logInfo("Status: "..response_handle:headers():get(":status"))
-                --response_handle:logErr("Status: "..response_handle:headers())
+                -- set always_wrap_body to true
+                always_wrap_body = true
+                -- print headers for debugging
                 for k,v in pairs(response_handle:headers()) do
                   print(k.." = "..v)
                 end
@@ -35,7 +36,6 @@ spec:
                 if status_code == nil then
                   response_handle:logInfo("No status code in response")
                   return
-                end
                 if status_code == "404" then
                   local custom_404_body = [[
                   <!DOCTYPE html>
@@ -64,7 +64,8 @@ spec:
                   </html>
                   ]]
                   response_handle:headers():replace("content-type", "text/html")
-                  response_handle:body():setBytes(custom_404_body)
+                  --response_handle:headers():add("content-type", "text/html")
+                  response_handle:body(always_wrap_body):setBytes(custom_404_body)
                 elseif status_code == "503" then
                   local custom_503_body = [[
                   <!DOCTYPE html>
