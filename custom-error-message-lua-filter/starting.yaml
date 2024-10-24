@@ -27,6 +27,7 @@ spec:
             inlineCode: |
               function envoy_on_response(response_handle)
                 -- set always_wrap_body to true
+                -- this means that, even if a body isn't provided from upstream, we have a body we can work with
                 always_wrap_body = true
                 -- print headers for debugging
                 for k,v in pairs(response_handle:headers()) do
