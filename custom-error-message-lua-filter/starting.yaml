@@ -19,7 +19,7 @@ spec:
               subFilter:
                 name: envoy.filters.http.router
       patch:
-        operation: INSERT_BEFORE #INSERT_FIRST #INSERT_BEFORE 
+        operation: INSERT_BEFORE #INSERT_FIRST
         value:
           name: envoy.filters.http.lua
           typed_config:
