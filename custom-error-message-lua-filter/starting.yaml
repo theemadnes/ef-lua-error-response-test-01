@@ -113,6 +113,6 @@ spec:
                   </html>
                   ]]
                   response_handle:headers():replace("content-type", "text/html")
-                  response_handle:body():setBytes(custom_503_body)
+                  response_handle:body(always_wrap_body):setBytes(custom_503_body)
                 end
               end
