@@ -13,18 +13,37 @@ spec:
       match:
         context: GATEWAY
         listener:
+          #portNumber: 8080 # set the appropriate listener port
           filterChain:
             filter:
               name: envoy.filters.network.http_connection_manager
               subFilter:
                 name: envoy.filters.http.router
       patch:
-        operation: INSERT_BEFORE #INSERT_FIRST
+        operation: INSERT_BEFORE
         value:
           name: envoy.filters.http.lua
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
             inlineCode: |
+              -- create a request id variable to be included in responses
+              request_id = nil
+              -- Called on the request path
+              function envoy_on_request(request_handle)
+                print("Request received")
+                local body = request_handle:body()
+                local headers = request_handle:headers()
+                -- print headers for debugging
+                for k,v in pairs(headers) do
+                  print(k.." = "..v)
+                end
+                -- if there is a header for x-request-id, assign to request_id
+                if request_handle:headers():get("x-request-id") then
+                  request_id = request_handle:headers():get("x-request-id")
+                  print("request ID: "..request_id)
+                end
+              end
+              -- Called on the response path
               function envoy_on_response(response_handle)
                 -- set always_wrap_body to true
                 -- this means that, even if a body isn't provided from upstream, we have a body we can work with
@@ -37,6 +56,7 @@ spec:
                 if status_code == nil then
                   response_handle:logInfo("No status code in response")
                   return
+                end
                 if status_code == "404" then
                   local custom_404_body = [[
                   <!DOCTYPE html>
@@ -61,6 +81,7 @@ spec:
                     <p>Oops! We couldn't find the page that you're looking for.</p>
                     <p>Please check the address and try again.</p>
                     <p>Error Code: 404</p>
+                    <p>x-request-id: ]] .. request_id .. [[</p>
                   </body>
                   </html>
                   ]]
@@ -110,6 +131,7 @@ spec:
                       </g>
                       </svg>
                     <div class="error-code">503 HTTP Error</div>
+                    <p>x-request-id: ]] .. request_id .. [[</p>
                   </body>
                   </html>
                   ]]

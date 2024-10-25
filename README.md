@@ -48,3 +48,9 @@ curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/
 # test 503
 curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/?echo_code=503 -v
 ```
+
+### seeing some old artifacts from prior tests so restarting ingress gateway pods
+
+```
+kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
+```
