@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: custom-error-response-wasm
+  namespace: ingress-gateway
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: GATEWAY
+      listener:
+        filterChain:
+          filter:
+            name: envoy.filters.network.http_connection_manager
+            subFilter:
+              name: envoy.filters.http.router
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: my-wasm
+        typed_config:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+          config:
+            vm_config:
+              vm_id: my-wasm # Needed for memory efficiency
+              code:
+                local:
+                  #filename: /wasm/custom_error_response_wasm.wasm
+                  inline_bytes: BASE64("/wasm/custom_error_response_wasm.wasm")
+              runtime: envoy.wasm.runtime.v8
+  workloadSelector:
+    labels:
+      asm: ingressgateway

@@ -1,0 +1,16 @@
+[package]
+name = "custom-error-response-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+proxy-wasm = "0.2"
+log = "0.4"
+[lib]
+crate-type = ["cdylib"]
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"
