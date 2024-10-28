@@ -56,6 +56,7 @@ kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
 ```
 
 ### setting up WASM example
+> note: needed to update this config to target the gateway instead of sidecar, both at the envoy filter level but also the ingress gateway deployment level
 
 ```
 cargo new --lib custom-error-response-wasm
@@ -76,10 +77,10 @@ kubectl -n ingress-gateway delete configmap wasm
 kubectl -n ingress-gateway create configmap wasm --from-file target/wasm32-wasi/release/custom_error_response_wasm.wasm
 
 # now edit the ingress gateway deployment to include the following annotations
-annotations:
-    # sidecar.istio.io/userVolume: '{"wasm":{"configMap":{"name":"wasm"}}}'
-    sidecar.istio.io/userVolume: '{"wasm":{"configMap":{"name":"wasm"},"items:[{"key":"custom_error_response_wasm.wasm","path":"/custom_error_response_wasm.wasm}]}}'
-    sidecar.istio.io/userVolumeMount: '{"wasm":{"mountPath":"/wasm","readOnly":true}}'
+#annotations:
+#    # sidecar.istio.io/userVolume: '{"wasm":{"configMap":{"name":"wasm"}}}'
+#    sidecar.istio.io/userVolume: '{"wasm":{"configMap":{"name":"wasm"},"items:[{"key":"custom_error_response_wasm.wasm","path":"/custom_error_response_wasm.wasm}]}}'
+#    sidecar.istio.io/userVolumeMount: '{"wasm":{"mountPath":"/wasm","readOnly":true}}'
 # this will restart the pods
 
 # apply wasm filter
@@ -88,4 +89,16 @@ INGRESS_GATEWAY_IP=$(kubectl get service asm-ingressgateway -n ingress-gateway -
 
 # test the call
 curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/ -v
+
+### because we're targeting a gateway deployment, and not a sidecar, let's switch to modifying the deployment to use a regular path
+# at container level in deployment config for ingress gateway
+volumeMounts:
+- mountPath: /wasm
+  name: wasm
+  readOnly: true
+# at pod level in deployment config for ingress gateway
+volumes:
+- name: wasm
+  configMap:
+    name: wasm
 ```

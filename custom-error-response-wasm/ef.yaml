@@ -25,8 +25,8 @@ spec:
               vm_id: my-wasm # Needed for memory efficiency
               code:
                 local:
-                  #filename: /wasm/custom_error_response_wasm.wasm
-                  inline_bytes: BASE64("/wasm/custom_error_response_wasm.wasm")
+                  filename: /wasm/custom_error_response_wasm.wasm
+                  #inline_bytes: BASE64("/wasm/custom_error_response_wasm.wasm")
               runtime: envoy.wasm.runtime.v8
   workloadSelector:
     labels:
