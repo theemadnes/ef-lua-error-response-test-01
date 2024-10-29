@@ -11,22 +11,22 @@ pub fn _start() {
 struct DemoPlugin {
    // Define request_id as a mutable field within the DemoPlugin struct
    request_id: String,
+   // Define vectors to store response flags for different status codes
+   response_flags_404: &'static [&'static str],
+   response_flags_4xx: &'static [&'static str],
+   response_flags_5xx: &'static [&'static str],
 }
 
 impl DemoPlugin {
    fn new() -> Self {
        DemoPlugin {
            request_id: String::new(),
+           response_flags_404: &["FI","NR","NC"],
+           response_flags_4xx: &["DC","DPE","DT","IH","RL","RLSE","UAEX"],
+           response_flags_5xx: &["LH","LR","OM","NFCF","SI","UC","UF","UH","UMSDR","UO","UPE","UR","URX","UT"],
        }
    }
 }
-// create vectors to store response flags for each status code grouping
-//static RESPONSE_FLAGS_404: &[&str] = &["FI","NR","NC"];
-//static RESPONSE_FLAGS_4XX: &[&str] = &["DC","DPE","DT","IH","RL","RLSE","UAEX"];
-//static RESPONSE_FLAGS_5XX: &[&str] = &["LH","LR","OM","NFCF","SI","UC","UF","UH","UMSDR","UO","UPE","UR","URX","UT"];
-//const response_flags_404: Vec<&str> = vec!["FI","NR","NC"];
-//const response_flags_4xx: Vec<&str> = vec!["DC","DPE","DT","IH","RL","RLSE","UAEX"];
-//const response_flags_5xx: Vec<&str> = vec!["LH","LR","OM","NFCF","SI","UC","UF","UH","UMSDR","UO","UPE","UR","URX","UT"];
 
 impl HttpContext for DemoPlugin {
 
