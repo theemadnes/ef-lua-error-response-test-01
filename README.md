@@ -55,7 +55,38 @@ curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/
 kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
 ```
 
-### setting up WASM example
+### create WASM plugin based on HTTP status code
+
+```
+# create plugin lib
+cargo new --lib custom-error-message-wasm-status-code
+cd custom-error-message-wasm-status-code
+cat <<EOF >> Cargo.toml
+proxy-wasm = "0.2"
+log = "0.4"
+[lib]
+crate-type = ["cdylib"]
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"
+EOF
+
+# set up src/lib.rs
+# compile src/lib.rs
+cargo build --release --target wasm32-wasip1
+
+# create configmap with WASM plugin
+kubectl -n ingress-gateway create configmap wasm --from-file target/wasm32-wasip1/release/custom_error_message_wasm_status_code.wasm
+# apply envoy filter
+kubectl -n ingress-gateway apply -f ef.yaml
+# redeploy ingress gateway pods
+kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
+```
+
+### setting up WASM example (old)
 > note: needed to update this config to target the gateway instead of sidecar, both at the envoy filter level but also the ingress gateway deployment level
 
 ```
