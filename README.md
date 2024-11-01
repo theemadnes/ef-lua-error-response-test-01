@@ -57,6 +57,21 @@ kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
 
 ### create WASM plugin based on HTTP status code
 
+> note: for this to work, you need to modify the ingress gateway deployment to mount the wasm binary in the deployment spec, like so:
+
+```
+# at container level in deployment config for ingress gateway
+volumeMounts:
+- mountPath: /wasm
+  name: wasm
+  readOnly: true
+# at pod level in deployment config for ingress gateway
+volumes:
+- name: wasm
+  configMap:
+    name: wasm
+```
+
 ```
 # create plugin lib
 cargo new --lib custom-error-message-wasm-status-code
@@ -84,52 +99,9 @@ kubectl -n ingress-gateway create configmap wasm --from-file target/wasm32-wasip
 kubectl -n ingress-gateway apply -f ef.yaml
 # redeploy ingress gateway pods
 kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
-```
 
-### setting up WASM example (old)
-> note: needed to update this config to target the gateway instead of sidecar, both at the envoy filter level but also the ingress gateway deployment level
-
-```
-cargo new --lib custom-error-response-wasm
-# doing this within custom-error-response-wasm folder
-cd custom-error-response-wasm/
-rustup target add wasm32-wasi
-cargo build --release --target wasm32-wasi 
-# attempting to add newer target
-rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1
-
-# remove Lua filter
-kubectl delete -f custom-error-message-lua-filter/
-
-# create configmap to reference WASM package
-kubectl -n ingress-gateway create configmap wasm --from-file target/wasm32-wasip1/release/custom_error_response_wasm.wasm
-kubectl -n ingress-gateway delete configmap wasm
-kubectl -n ingress-gateway create configmap wasm --from-file target/wasm32-wasi/release/custom_error_response_wasm.wasm
-
-# now edit the ingress gateway deployment to include the following annotations
-#annotations:
-#    # sidecar.istio.io/userVolume: '{"wasm":{"configMap":{"name":"wasm"}}}'
-#    sidecar.istio.io/userVolume: '{"wasm":{"configMap":{"name":"wasm"},"items:[{"key":"custom_error_response_wasm.wasm","path":"/custom_error_response_wasm.wasm}]}}'
-#    sidecar.istio.io/userVolumeMount: '{"wasm":{"mountPath":"/wasm","readOnly":true}}'
-# this will restart the pods
-
-# apply wasm filter
-kubectl apply -f ef.yaml
+# test
 INGRESS_GATEWAY_IP=$(kubectl get service asm-ingressgateway -n ingress-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
-# test the call
-curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/ -v
-
-### because we're targeting a gateway deployment, and not a sidecar, let's switch to modifying the deployment to use a regular path
-# at container level in deployment config for ingress gateway
-volumeMounts:
-- mountPath: /wasm
-  name: wasm
-  readOnly: true
-# at pod level in deployment config for ingress gateway
-volumes:
-- name: wasm
-  configMap:
-    name: wasm
+curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/ -v # this should work fine
+curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-123/ -v # this should give you a 404 
 ```
