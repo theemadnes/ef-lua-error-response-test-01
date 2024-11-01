@@ -74,6 +74,7 @@ volumes:
 
 ```
 # create plugin lib
+# see https://cloud.google.com/service-extensions/docs/prepare-plugin-code for setup instructions
 cargo new --lib custom-error-message-wasm-status-code
 cd custom-error-message-wasm-status-code
 cat <<EOF >> Cargo.toml
