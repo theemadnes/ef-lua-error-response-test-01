@@ -96,7 +96,7 @@ cargo build --release --target wasm32-wasip1
 # create configmap with WASM plugin
 kubectl -n ingress-gateway create configmap wasm --from-file target/wasm32-wasip1/release/custom_error_message_wasm_status_code.wasm
 # apply envoy filter
-kubectl -n ingress-gateway apply -f ef.yaml
+kubectl -n ingress-gateway apply -f ef.yaml # make sure you've deleted the Lua envoy filter first
 # redeploy ingress gateway pods
 kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
 
