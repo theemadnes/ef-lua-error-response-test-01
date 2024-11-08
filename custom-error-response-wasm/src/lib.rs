@@ -1,40 +1,42 @@
 //use log::info;
 use proxy_wasm::traits::*;
 use proxy_wasm::types::*;
-use bitvec::prelude::*;
+//use bitvec::prelude::*;
+//use std::any::type_name;
 
-#[repr(u32)]
+#[repr(u16)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CoreResponseFlag {
-    FailedLocalHealthCheck = 0,
-    NoHealthyUpstream = 1,
-    UpstreamRequestTimeout = 2,
-    LocalReset = 3,
-    UpstreamRemoteReset = 4,
-    UpstreamConnectionFailure = 5,
-    UpstreamConnectionTermination = 6,
-    UpstreamOverflow = 7,
-    NoRouteFound = 8,
-    DelayInjected = 9,
-    FaultInjected = 10,
-    RateLimited = 11,
-    UnauthorizedExternalService = 12,
-    RateLimitServiceError = 13,
-    DownstreamConnectionTermination = 14,
-    UpstreamRetryLimitExceeded = 15,
-    StreamIdleTimeout = 16,
-    InvalidEnvoyRequestHeaders = 17,
-    DownstreamProtocolError = 18,
-    UpstreamMaxStreamDurationReached = 19,
-    ResponseFromCacheFilter = 20,
-    NoFilterConfigFound = 21,
-    DurationTimeout = 22,
-    UpstreamProtocolError = 23,
-    NoClusterFound = 24,
-    OverloadManager = 25,
-    DnsResolutionFailed = 26,
-    DropOverLoad = 27,
-    DownstreamRemoteReset = 28,
+    NoError = 0,
+    FailedLocalHealthCheck = 1,
+    NoHealthyUpstream = 2,
+    UpstreamRequestTimeout = 3,
+    LocalReset = 4,
+    UpstreamRemoteReset = 5,
+    UpstreamConnectionFailure = 6,
+    UpstreamConnectionTermination = 7,
+    UpstreamOverflow = 8,
+    NoRouteFound = 9,
+    DelayInjected = 10,
+    FaultInjected = 11,
+    RateLimited = 12,
+    UnauthorizedExternalService = 13,
+    RateLimitServiceError = 14,
+    DownstreamConnectionTermination = 15,
+    UpstreamRetryLimitExceeded = 16,
+    StreamIdleTimeout = 17,
+    InvalidEnvoyRequestHeaders = 18,
+    DownstreamProtocolError = 19,
+    UpstreamMaxStreamDurationReached = 20,
+    ResponseFromCacheFilter = 21,
+    NoFilterConfigFound = 22,
+    DurationTimeout = 23,
+    UpstreamProtocolError = 24,
+    NoClusterFound = 25,
+    OverloadManager = 26,
+    DnsResolutionFailed = 27,
+    DropOverLoad = 28,
+    DownstreamRemoteReset = 29,
     //LastFlag = DownstreamRemoteReset,
 }
 
@@ -48,18 +50,18 @@ struct DemoPlugin {
    // Define request_id as a mutable field within the DemoPlugin struct
    request_id: String,
    // Define vectors to store response flags for different status codes
-   response_flags_404: &'static [&'static str],
-   response_flags_4xx: &'static [&'static str],
-   response_flags_5xx: &'static [&'static str],
+   //response_flags_404: &'static [&'static str],
+   //response_flags_4xx: &'static [&'static str],
+   //response_flags_5xx: &'static [&'static str],
 }
 
 impl DemoPlugin {
    fn new() -> Self {
        DemoPlugin {
            request_id: String::new(),
-           response_flags_404: &["FI","NR","NC"],
-           response_flags_4xx: &["DC","DPE","DT","IH","RL","RLSE","UAEX"],
-           response_flags_5xx: &["LH","LR","OM","NFCF","SI","UC","UF","UH","UMSDR","UO","UPE","UR","URX","UT"],
+           //response_flags_404: &["FI","NR","NC"],
+           //response_flags_4xx: &["DC","DPE","DT","IH","RL","RLSE","UAEX"],
+           //response_flags_5xx: &["LH","LR","OM","NFCF","SI","UC","UF","UH","UMSDR","UO","UPE","UR","URX","UT"],
        }
    }
 }
@@ -87,25 +89,33 @@ impl HttpContext for DemoPlugin {
       self.set_http_response_header("x-request-id", Some(&self.request_id)); 
       // test message
       eprintln!("hello error from wasm");
-      /*if let Some(response_flags) = self.get_property(vec!["response", "flags"]) {
-         //let flag_str = String::from_utf8_lossy(&response_flags);
-         eprintln!("response_flags: {:?}", response_flags);
-      } else {
-         eprintln!("Failed to get response flags");
-      }*/
-      if let Some(response_flags_bool) = self.get_property(vec!["response", "flags"]) {
-         eprintln!("{}", format!("response_flags_bool: {:?}", response_flags_bool));
+      
+      let flags_path = vec!["response", "flags"];
+      let flags_result = self.get_property(flags_path).expect("REASON");
 
-         let response_flags: u32 = if let Ok(bitvector) = response_flags_bool.try_into() {
-            let mut bv = BitVec::<u32, Msb0>::from_vec(bitvector);
-            bv.load_be()
-         } else {
-            eprintln!("Failed to convert response flags to bytes");
-            return Action::Continue;
-         };
-      } else {
-         eprintln!("Failed to get response flags");
+      // create a function to convert the vector to a byte 
+      fn vec_to_byte_reversed(bits: Vec<u8>) -> Option<u8> {
+         if bits.len() != 8 {
+             return None; // We need exactly 8 bits
+         }
+     
+         let mut byte = 0u8;
+         for (i, bit) in bits.iter().enumerate() {
+             if *bit > 1 {
+                 return None; // Invalid bit value
+             }
+             byte |= (*bit as u8) << i;
+         }
+     
+         Some(byte)
       }
+
+      let flag_byte = vec_to_byte_reversed(flags_result.clone()).unwrap_or_default();
+      let flag_byte_as_u16 = flag_byte as u16;
+      eprintln!("flags_result: {:?}", flags_result);
+      eprintln!("flag_byte: {:b}", flag_byte);
+      eprintln!("as integer: {}", flag_byte_as_u16);
+
       // log response headers
       for (name, value) in &self.get_http_response_headers() {
          //info!("#{} <- {}: {}", self.context_id, name, value);
