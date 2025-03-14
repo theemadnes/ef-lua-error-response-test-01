@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ws-sample
+  namespace: default
+spec:
+  gateways:
+  - ingress-gateway/asm-ingressgateway
+  hosts:
+  - "*"
+  http:
+  - match:
+    - uri:
+        prefix: /ws-sample/
+    rewrite:
+      uri: "/"
+    route:
+    - destination:
+        host: ws-app
+        port:
+          number: 80

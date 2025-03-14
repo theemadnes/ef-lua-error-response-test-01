@@ -1,0 +1,161 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: custom-error-pages
+  namespace: ingress-gateway
+spec:
+  workloadSelector:
+    labels:
+      #istio: istio-ingressgateway
+      asm: ingressgateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          #portNumber: 8080 # set the appropriate listener port
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.lua
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+            inlineCode: |
+              -- create a request id variable to be included in responses
+              request_id = nil
+              -- Called on the request path
+              function envoy_on_request(request_handle)
+                -- set up a way to short-circuit for Websockets based on path
+                local path = request_handle:headers():get(":path")
+                -- Define the path to disable the filter for.
+                local disable_path = "/ws-sample/"
+                if path == disable_path then
+                  -- Log that the filter is being bypassed.
+                  request_handle:logWarn("Filter disabled for path: " .. path)
+                  -- Skip further filter processing.
+                  return
+                end
+                print("Request received")
+                local body = request_handle:body()
+                local headers = request_handle:headers()
+                -- print headers for debugging
+                for k,v in pairs(headers) do
+                  print(k.." = "..v)
+                end
+                -- if there is a header for x-request-id, assign to request_id
+                if request_handle:headers():get("x-request-id") then
+                  request_id = request_handle:headers():get("x-request-id")
+                  print("request ID: "..request_id)
+                end
+              end
+              -- Called on the response path
+              function envoy_on_response(response_handle)
+                -- set up a way to short-circuit for Websockets based on path
+                local path = response_handle:headers():get(":path")
+                -- Define the path to disable the filter for.
+                local disable_path = "/ws-sample/"
+                if path == disable_path then
+                  -- Log that the filter is being bypassed.
+                  response_handle:logWarn("Filter disabled for path: " .. path)
+                  -- Skip further filter processing.
+                  return
+                end
+                -- set always_wrap_body to true
+                -- this means that, even if a body isn't provided from upstream, we have a body we can work with
+                always_wrap_body = true
+                -- print headers for debugging
+                for k,v in pairs(response_handle:headers()) do
+                  print(k.." = "..v)
+                end
+                local status_code = response_handle:headers():get(":status")
+                if status_code == nil then
+                  response_handle:logInfo("No status code in response")
+                  return
+                end
+                if status_code == "404" then
+                  local custom_404_body = [[
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <meta charset="UTF-8">
+                    <title>Page Not Found</title>
+                    <style>
+                      body { background-color: #f4f4f4; color: #333; text-align: center; font-family: Arial, sans-serif; margin-top: 10%; }
+                      h1 { font-size: 2.5em; margin: 20px 0; }
+                      p { font-size: 1.2em; margin: 10px 0; }
+                      .icon { width: 100px; height: 100px; margin: 0 auto; }
+                    </style>
+                  </head>
+                  <body>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#5CB5EE" class="icon" viewBox="0 0 16 16">
+                    <circle cx="8" cy="8" r="8" fill="#5DADE2"/>
+                    <path d="M7.255 6.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94" fill="#FFFFFF" transform="translate(-2 -1)"/>
+                    </svg>
+                    
+                    <h1>Page Not Found</h1>
+                    <p>Oops! We couldn't find the page that you're looking for.</p>
+                    <p>Please check the address and try again.</p>
+                    <p>Error Code: 404</p>
+                    <p>x-request-id: ]] .. request_id .. [[</p>
+                  </body>
+                  </html>
+                  ]]
+                  response_handle:headers():replace("content-type", "text/html")
+                  --response_handle:headers():add("content-type", "text/html")
+                  response_handle:body(always_wrap_body):setBytes(custom_404_body)
+                elseif status_code == "503" then
+                  local custom_503_body = [[
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <meta charset="UTF-8">
+                    <title>Service Unavailable</title>
+                    <style>
+                      body { background-color: #f4f4f4; color: #333; text-align: center; font-family: Arial, sans-serif; margin-top: 10%; }
+                      h1 { font-size: 2.5em; margin: 20px 0; color: #5CB5EE; }
+                      p { font-size: 1.2em; margin: 10px 0; }
+                      .icon { width: 150px; height: 150px; margin: 0 auto; }
+                      .error-code { font-size: 2em; color: #5CB5EE; margin-top: 1.2rem; font-weight: bolder; }
+                    </style>
+                  </head>
+                  <body>
+                    <h1>Service Unavailable</h1>
+                    <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+                      width="211.000000pt" height="116.000000pt" viewBox="0 0 211.000000 116.000000"
+                      preserveAspectRatio="xMidYMid meet">
+                      <metadata>
+                      Created by potrace 1.16, written by Peter Selinger 2001-2019
+                      </metadata>
+                      <g transform="translate(0.000000,116.000000) scale(0.100000,-0.100000)"
+                      fill="#737174" stroke="none">
+                      <path d="M335 929 c-88 -116 -168 -221 -178 -235 l-19 -24 916 0 c504 0 916 2
+                      916 5 0 3 -20 31 -45 63 -76 97 -259 335 -283 370 l-23 32 -562 0 -562 0 -160
+                      -211z"/>
+                      <path d="M10 265 l0 -254 32 -6 c18 -3 487 -4 1043 -3 l1010 3 3 258 2 257
+                      -1045 0 -1045 0 0 -255z m340 105 c0 -5 -6 -24 -14 -42 -8 -18 -27 -66 -43
+                      -105 l-28 -73 -57 0 -57 0 13 38 c8 20 24 62 36 92 12 30 26 65 31 78 7 19 16
+                      22 64 22 30 0 55 -4 55 -10z m179 -2 c0 -7 -19 -58 -42 -113 l-42 -100 -59 -3
+                      c-45 -2 -57 0 -53 10 3 7 22 56 42 108 20 52 39 98 42 103 8 13 113 8 112 -5z
+                      m180 0 c0 -7 -19 -58 -42 -113 l-42 -100 -58 -3 c-31 -2 -57 -1 -57 1 0 2 16
+                      43 36 93 20 49 40 99 45 112 7 19 16 22 64 22 38 0 55 -4 54 -12z m181 5 c0
+                      -5 -19 -55 -43 -113 l-43 -105 -58 -3 c-53 -3 -58 -1 -51 15 4 10 22 58 41
+                      107 19 48 37 92 40 97 6 11 114 12 114 2z m175 -12 c-3 -11 -23 -62 -44 -113
+                      l-37 -93 -57 -3 c-31 -2 -57 -1 -57 2 0 7 80 207 86 218 3 5 30 8 60 8 50 0
+                      55 -2 49 -19z m844 -47 c62 -79 -43 -170 -114 -99 -49 49 -16 125 55 125 30 0
+                      43 -6 59 -26z"/>
+                      </g>
+                      </svg>
+                    <div class="error-code">503 HTTP Error</div>
+                    <p>x-request-id: ]] .. request_id .. [[</p>
+                  </body>
+                  </html>
+                  ]]
+                  response_handle:headers():replace("content-type", "text/html")
+                  response_handle:body(always_wrap_body):setBytes(custom_503_body)
+                end
+              end
