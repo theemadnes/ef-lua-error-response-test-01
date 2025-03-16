@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: whereami-grpc
+  namespace: whereami-grpc
+spec:
+  gateways:
+  - ingress-gateway/asm-ingressgateway
+  hosts:
+  - "grpc.example.com"
+  http:
+  #- match:
+  #  - uri:
+  #      prefix: "/whereami.Whereami"
+    #rewrite:
+    #  uri: "/"
+  - route:
+    - destination:
+        host: whereami-grpc
+        port:
+          number: 9090

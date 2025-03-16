@@ -1,0 +1,2 @@
+resources:
+  - github.com/GoogleCloudPlatform/kubernetes-engine-samples/quickstarts/whereami/k8s-grpc

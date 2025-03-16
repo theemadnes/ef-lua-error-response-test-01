@@ -1,0 +1,20 @@
+#nameSuffix: "-backend"
+namespace: whereami-grpc
+commonLabels:
+  app: whereami-grpc
+resources:
+- ../base
+patches:
+- path: service-type.yaml
+  target:
+    kind: Service
+#- target:
+#    kind: Service
+#    name: whereami-grpc
+#  patch: |-
+#    - op: replace
+#      path: /spec/ports/0/port
+#      value: 80
+#    - op: replace
+#      path: /spec/ports/0/targetPort
+#      value: 9090

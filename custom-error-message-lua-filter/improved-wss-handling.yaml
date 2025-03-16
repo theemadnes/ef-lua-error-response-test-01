@@ -31,15 +31,26 @@ spec:
               -- Called on the request path
               function envoy_on_request(request_handle)
                 -- set up a way to short-circuit for Websockets based on header
-                local upgrade = request_handle:headers():get("upgrade")
-                if upgrade == "websocket" then
-                  -- Log that the filter is being bypassed.
-                  request_handle:logWarn("Filter disabled for Websockets")
-                  -- Skip further filter processing.
-                  return
-                end
+                --local upgrade = request_handle:headers():get("upgrade")
+                --if upgrade == "websocket" then
+                --  -- Log that the filter is being bypassed.
+                --  request_handle:logWarn("Filter disabled for Websockets")
+                --  -- Skip further filter processing.
+                --  return
+                --end
+                -- for debugging also ignore gRPC requests
+                --if request_handle:headers():get(":content-type"):match("application/grpc") then 
+                --  request_handle:logWarn("Filter disabled for gRPC")
+                --  local path = request_handle:headers():get(":path")
+                --  local method = path:match("/([^/]+)/([^/]+)$") -- Extract service and method
+                --  if method then
+                --    local service = method[1]
+                --    local method_name = method[2]
+                --    request_handle:logInfo(string.format("gRPC request: service=%s, method=%s, path=%s", service, method_name, path))
+                --  return
+                --end
                 print("Request received")
-                local body = request_handle:body()
+                -- local body = request_handle:body()
                 local headers = request_handle:headers()
                 -- print headers for debugging
                 for k,v in pairs(headers) do
@@ -146,4 +157,5 @@ spec:
                   response_handle:headers():replace("content-type", "text/html")
                   response_handle:body(always_wrap_body):setBytes(custom_503_body)
                 end
+              return
               end
