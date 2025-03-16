@@ -31,7 +31,7 @@ spec:
               -- Called on the request path
               function envoy_on_request(request_handle)
                 print("Request received")
-                local body = request_handle:body()
+                -- local body = request_handle:body()
                 local headers = request_handle:headers()
                 -- print headers for debugging
                 for k,v in pairs(headers) do
