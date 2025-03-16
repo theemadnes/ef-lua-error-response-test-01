@@ -16,6 +16,6 @@ spec:
     #  uri: "/"
   - route:
     - destination:
-        host: whereami-grpc
+        host: whereami-grpc.whereami-grpc.svc.cluster.local
         port:
           number: 9090
