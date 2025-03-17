@@ -51,9 +51,14 @@ kubectl apply -f whereami-grpc/whereami-grpc-vs.yaml
 
 grpcurl -plaintext -H "Host: grpc.example.com" 34.57.90.31:80 whereami.Whereami.GetPayload | jq .
 curl -s -H "Host: workload-1.example.com" http://34.57.90.31/workload-1/ -v
+curl -s -H "Host: workload-1.example.com" http://34.57.90.31/workload-123/
 
 kubectl apply -f custom-error-message-lua-filter/improved-wss-handling.yaml
 
 grpcurl -H "Host: your-domain.com" -d '{"field1": "value1", "field2": 123}' <IP_ADDRESS>:<PORT> <SERVICE_NAME>/<METHOD_NAME>
 grpcurl -H "Host: grpc.example.com" -authority grpc.example.com -plaintext 34.57.90.31:80 whereami.Whereami/GetPayload
 grpcurl -authority grpc.example.com -plaintext 34.57.90.31:80 whereami.Whereami/GetPayload
+
+
+# testing new logging setup
+kubectl apply -f custom-error-message-lua-filter/starting.yaml

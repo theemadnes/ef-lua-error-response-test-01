@@ -30,17 +30,19 @@ spec:
               request_id = nil
               -- Called on the request path
               function envoy_on_request(request_handle)
-                print("Request received")
+                -- setting the logging level to debug - disable this for prod
+                --envoy.log(debug, "Setting log level to debug")
+                request_handle:logInfo("Request received")
                 -- local body = request_handle:body()
                 local headers = request_handle:headers()
                 -- print headers for debugging
                 for k,v in pairs(headers) do
-                  print(k.." = "..v)
+                  request_handle:logInfo(k.." = "..v)
                 end
                 -- if there is a header for x-request-id, assign to request_id
                 if request_handle:headers():get("x-request-id") then
                   request_id = request_handle:headers():get("x-request-id")
-                  print("request ID: "..request_id)
+                  request_handle:logInfo("request ID: "..request_id)
                 end
               end
               -- Called on the response path
@@ -50,11 +52,11 @@ spec:
                 always_wrap_body = true
                 -- print headers for debugging
                 for k,v in pairs(response_handle:headers()) do
-                  print(k.." = "..v)
+                  response_handle:logInfo(k.." = "..v)
                 end
                 local status_code = response_handle:headers():get(":status")
                 if status_code == nil then
-                  response_handle:logInfo("No status code in response")
+                  response_handle:logWarn("No status code in response")
                   return
                 end
                 if status_code == "404" then
