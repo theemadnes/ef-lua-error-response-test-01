@@ -30,8 +30,6 @@ spec:
               request_id = nil
               -- Called on the request path
               function envoy_on_request(request_handle)
-                -- setting the logging level to debug - disable this for prod
-                --envoy.log(debug, "Setting log level to debug")
                 request_handle:logWarn("Request received")
                 -- local body = request_handle:body()
                 local headers = request_handle:headers()
