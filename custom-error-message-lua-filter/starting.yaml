@@ -35,13 +35,12 @@ spec:
                 --for k,v in pairs(headers) do
                 --  print(k.." = "..v)
                 --end
-                -- if there is a header for x-request-id, assign to request_id
+                -- if there is a header for x-request-id, assign to dynamic metadata, otherwise set to NULL
                 if request_handle:headers():get("x-request-id") then
-                  request_id = request_handle:headers():get("x-request-id")
                   request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "request.info", {
-                    r_id = request_id,
+                    r_id = request_handle:headers():get("x-request-id"),
                   })
-                  request_handle:logWarn("request ID: "..request_id)
+                  request_handle:logWarn("request ID: "..request_handle:headers():get("x-request-id"))
                 else
                   request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "request.info", {
                     r_id = "NULL",
@@ -53,7 +52,7 @@ spec:
               function envoy_on_response(response_handle)
                 -- set always_wrap_body to true
                 -- this means that, even if a body isn't provided from upstream, we have a body we can work with
-                always_wrap_body = true
+                local always_wrap_body = true
                 -- print headers for debugging (COMMENTED OUT)
                 --for k,v in pairs(response_handle:headers()) do
                 --  print(k.." = "..v)
