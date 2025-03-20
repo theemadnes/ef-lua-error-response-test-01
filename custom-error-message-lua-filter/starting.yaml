@@ -28,7 +28,7 @@ spec:
             inlineCode: |
               -- Called on the request path
               function envoy_on_request(request_handle)
-                request_handle:logWarn("Request received")
+                request_handle:logWarn("request received")
                 --local body = request_handle:body()
                 --local headers = request_handle:headers()
                 -- print headers for debugging (COMMENTED OUT)
