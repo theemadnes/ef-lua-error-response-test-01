@@ -36,11 +36,12 @@ spec:
                 --  print(k.." = "..v)
                 --end
                 -- if there is a header for x-request-id, assign to dynamic metadata, otherwise set to NULL
-                if request_handle:headers():get("x-request-id") then
+                local request_id = request_handle:headers():get("x-request-id")
+                if request_id then
                   request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "request.info", {
-                    r_id = request_handle:headers():get("x-request-id"),
+                    r_id = request_id,
                   })
-                  request_handle:logWarn("request ID: "..request_handle:headers():get("x-request-id"))
+                  request_handle:logWarn("request ID: "..request_id)
                 else
                   request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "request.info", {
                     r_id = "NULL",
