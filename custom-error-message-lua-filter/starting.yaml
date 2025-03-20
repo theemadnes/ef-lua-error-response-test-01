@@ -26,21 +26,27 @@ spec:
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
             inlineCode: |
-              -- create a request id variable to be included in responses
-              request_id = nil
               -- Called on the request path
               function envoy_on_request(request_handle)
                 request_handle:logWarn("Request received")
-                -- local body = request_handle:body()
-                local headers = request_handle:headers()
+                --local body = request_handle:body()
+                --local headers = request_handle:headers()
                 -- print headers for debugging (COMMENTED OUT)
                 --for k,v in pairs(headers) do
-                --  request_handle:logWarn(k.." = "..v)
+                --  print(k.." = "..v)
                 --end
                 -- if there is a header for x-request-id, assign to request_id
                 if request_handle:headers():get("x-request-id") then
                   request_id = request_handle:headers():get("x-request-id")
+                  request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "request.info", {
+                    r_id = request_id,
+                  })
                   request_handle:logWarn("request ID: "..request_id)
+                else
+                  request_handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "request.info", {
+                    r_id = "NULL",
+                  })
+                  request_handle:logWarn("request ID not found - setting to NULL")
                 end
               end
               -- Called on the response path
@@ -50,8 +56,10 @@ spec:
                 always_wrap_body = true
                 -- print headers for debugging (COMMENTED OUT)
                 --for k,v in pairs(response_handle:headers()) do
-                --  response_handle:logWarn(k.." = "..v)
+                --  print(k.." = "..v)
                 --end
+                -- get request id from dynamic metadata
+                local request_id = response_handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["request.info"].r_id
                 local status_code = response_handle:headers():get(":status")
                 if status_code == nil then
                   response_handle:logWarn("No status code in response")

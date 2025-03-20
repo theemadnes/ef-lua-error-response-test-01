@@ -50,7 +50,7 @@ kubectl apply -k whereami-grpc/variant/
 kubectl apply -f whereami-grpc/whereami-grpc-vs.yaml
 
 grpcurl -plaintext -H "Host: grpc.example.com" 34.57.90.31:80 whereami.Whereami.GetPayload | jq .
-curl -s -H "Host: workload-1.example.com" http://34.57.90.31/workload-1/ -v
+curl -s -H "Host: workload-1.example.com" http://34.57.90.31/workload-1/ -v 
 curl -s -H "Host: workload-1.example.com" http://34.57.90.31/workload-123/
 
 kubectl apply -f custom-error-message-lua-filter/improved-wss-handling.yaml
