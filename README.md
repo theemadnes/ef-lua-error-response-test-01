@@ -152,4 +152,6 @@ kubectl -n ingress-gateway apply -f ef.yaml
 kubectl -n ingress-gateway edit deployment asm-ingressgateway
 
 
+# test calls 
+hey -host workload-1.example.com http://34.57.90.31/workload-1/
 ```
