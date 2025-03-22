@@ -67,9 +67,13 @@ volumeMounts:
   readOnly: true
 # at pod level in deployment config for ingress gateway
 volumes:
-- name: wasm
-  configMap:
+- configMap:
+    defaultMode: 292
+    items:
+    - key: custom_error_response_wasm_shared_data_b64.wasm
+      path: custom_error_response_wasm_shared_data_b64.wasm
     name: wasm
+  name: wasm
 ```
 
 ```
@@ -105,4 +109,47 @@ kubectl -n ingress-gateway rollout restart deployment/asm-ingressgateway
 INGRESS_GATEWAY_IP=$(kubectl get service asm-ingressgateway -n ingress-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-1/ -v # this should work fine
 curl -s -H "Host: workload-1.example.com" http://$INGRESS_GATEWAY_IP/workload-123/ -v # this should give you a 404 
+```
+
+### trying to set up new Rust WASM plugin using shared data 
+
+```
+# remove prior filter (assuming *starting.yaml)
+kubectl delete -f custom-error-message-lua-filter/starting.yaml
+
+
+# following https://cloud.google.com/service-extensions/docs/prepare-plugin-code#rust
+rustup target add wasm32-wasip1
+
+cargo new --lib custom-error-response-wasm-shared-data
+
+cd custom-error-response-wasm-shared-data
+
+# build binary
+cargo build --release --target wasm32-wasip1
+
+# remove old configmap
+kubectl -n ingress-gateway delete configmap wasm
+
+# create new configmap with WASM plugin
+# first convert file to base64
+cat <<EOF > cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wasm
+  namespace: ingress-gateway
+binaryData:
+  custom_error_response_wasm_shared_data_b64.wasm: $(base64 -w 0 target/wasm32-wasip1/release/custom_error_response_wasm_shared_data.wasm)
+EOF
+
+kubectl apply -f cm.yaml
+
+# apply envoy filter
+kubectl -n ingress-gateway apply -f ef.yaml
+
+# edit the deployment to make sure the filter path is referenced
+kubectl -n ingress-gateway edit deployment asm-ingressgateway
+
+
 ```
