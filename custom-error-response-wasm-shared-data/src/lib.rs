@@ -23,12 +23,6 @@ impl DemoPlugin {
 impl HttpContext for DemoPlugin {
 
    fn on_http_request_headers(&mut self, _: usize, _: bool) -> Action {
-      // log request headers
-      /*for (name, value) in &self.get_http_request_headers() {
-         //info!("#{} <- {}: {}", self.context_id, name, value);
-         //info!("{}: {}", name, value);
-         eprint!("{0}: {1}\n", name, value);
-      }*/
       // get request_id header
       if let Some(_header_field) = self.get_http_request_header("x-request-id") {
          self.request_id = _header_field.to_string(); // Assign to the struct field
@@ -37,11 +31,6 @@ impl HttpContext for DemoPlugin {
    }
 
    fn on_http_response_headers(&mut self, _: usize, _: bool) -> Action {
-      // add a header
-      /*self.set_http_response_header("x-hello", Some("wasm"));
-      self.set_http_response_header("x-test1", Some("hello world"));
-      self.set_http_response_header("x-request-id", Some(&self.request_id)); */
-
       // capture HTTP status code from headers
       if let Some(status_code) = self.get_http_response_header(":status") {
 
@@ -61,13 +50,6 @@ impl HttpContext for DemoPlugin {
          }
       }
 
-      // log response headers
-      /*
-      for (name, value) in &self.get_http_response_headers() {
-         //info!("#{} <- {}: {}", self.context_id, name, value);
-         //info!("{}: {}", name, value);
-         eprint!("{0}: {1}\n", name, value);
-      }*/
       Action::Continue
    }
 }
